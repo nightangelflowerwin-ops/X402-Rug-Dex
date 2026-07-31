@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "express": "^4.19.2",
-    "x402-express": "^0.3.0",
+    "x402-express": "^1.2.0",
     "@coinbase/x402": "^2.1.0",
     "node-fetch": "^3.3.2"
   }
