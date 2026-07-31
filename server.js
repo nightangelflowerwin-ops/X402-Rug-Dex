@@ -1,5 +1,6 @@
 import express from "express";
 import { paymentMiddleware } from "x402-express";
+import { facilitator } from "@coinbase/x402";
 import { detectClusters } from "./clustering.js";
 
 const app = express();
@@ -7,9 +8,13 @@ const app = express();
 // --- x402 payment config ---
 // Charges $0.05 USDC on Base per successful lookup.
 // PAY_TO_ADDRESS should be the wallet you want proceeds sent to.
+//
+// Uses Coinbase's CDP facilitator, which is required for real (mainnet) Base
+// settlement — the generic x402.org/facilitator only works on Base Sepolia
+// testnet and will silently reject real mainnet payments.
+// Requires CDP_API_KEY_ID and CDP_API_KEY_SECRET env vars (free, from
+// portal.cdp.coinbase.com).
 const PAY_TO_ADDRESS = process.env.PAY_TO_ADDRESS;
-const FACILITATOR_URL =
-  process.env.X402_FACILITATOR_URL || "https://x402.org/facilitator";
 
 app.use(
   paymentMiddleware(
@@ -24,7 +29,7 @@ app.use(
         },
       },
     },
-    { url: FACILITATOR_URL }
+    facilitator
   )
 );
 
@@ -71,6 +76,11 @@ app.listen(PORT, () => {
   if (!process.env.HELIUS_API_KEY) {
     console.warn(
       "WARNING: HELIUS_API_KEY not set — /api/wallet-clusters will fail."
+    );
+  }
+  if (!process.env.CDP_API_KEY_ID || !process.env.CDP_API_KEY_SECRET) {
+    console.warn(
+      "WARNING: CDP_API_KEY_ID / CDP_API_KEY_SECRET not set — payments will fail to verify on Base mainnet."
     );
   }
 });
