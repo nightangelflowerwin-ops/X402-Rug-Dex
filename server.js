@@ -5,6 +5,12 @@ import { detectClusters } from "./clustering.js";
 
 const app = express();
 
+// Basic request logging so failures are actually visible in Railway logs
+app.use((req, res, next) => {
+  console.log(`[req] ${req.method} ${req.url}`);
+  next();
+});
+
 // --- x402 payment config ---
 // Charges $0.05 USDC on Base per successful lookup.
 // PAY_TO_ADDRESS should be the wallet you want proceeds sent to.
@@ -66,6 +72,17 @@ app.get("/", (req, res) => {
 });
 
 const PORT = process.env.PORT || 3000;
+
+// Catch anything that slips through unhandled, log it fully instead of silently 500ing
+app.use((err, req, res, next) => {
+  console.error("[unhandled error]", err?.message, err?.stack);
+  res.status(500).json({ error: "internal error", message: err?.message });
+});
+
+process.on("unhandledRejection", (reason) => {
+  console.error("[unhandledRejection]", reason);
+});
+
 app.listen(PORT, () => {
   console.log(`wallet-cluster-x402 listening on :${PORT}`);
   if (!PAY_TO_ADDRESS) {
